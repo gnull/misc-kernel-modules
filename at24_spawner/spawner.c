@@ -9,6 +9,16 @@ static struct i2c_client *client = NULL;
 
 static void setup(struct memory_accessor *macc, void *context)
 {
+	char buf[257] = {};
+	ssize_t len;
+
+	BUG_ON(!macc->read);
+	len = macc->read(macc, buf, 0, 256);
+	buf[256] = 0;
+
+	printk("got %u bytes from eeprom\n", (unsigned int) len);
+	printk("those bytes are: %s\n", buf);
+
 	printk("setup!\n");
 }
 
