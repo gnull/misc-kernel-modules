@@ -6,7 +6,7 @@
 
 static struct i2c_client *client = NULL;
 
-void spawn_eeprom(struct i2c_adapter *adapter)
+static void spawn_eeprom(struct i2c_adapter *adapter)
 {
 	struct i2c_board_info info = {
 		.type = "24c02",
@@ -20,7 +20,7 @@ void spawn_eeprom(struct i2c_adapter *adapter)
 		client->name);
 }
 
-int spawner_probe(struct platform_device *pdev)
+static int spawner_probe(struct platform_device *pdev)
 {
 	int err;
 	phandle i2c_bus_h;
@@ -51,7 +51,7 @@ int spawner_probe(struct platform_device *pdev)
 	return 0;
 }
 
-int spawner_remove(struct platform_device *pdev)
+static int spawner_remove(struct platform_device *pdev)
 {
 	printk("removed\n");
 	return 0;
