@@ -20,6 +20,11 @@ static void spawn_eeprom(struct i2c_adapter *adapter)
 		client->name);
 }
 
+static void remove_eeprom(void)
+{
+	i2c_unregister_device(client);
+}
+
 static int spawner_probe(struct platform_device *pdev)
 {
 	int err;
@@ -53,6 +58,7 @@ static int spawner_probe(struct platform_device *pdev)
 
 static int spawner_remove(struct platform_device *pdev)
 {
+	remove_eeprom();
 	printk("removed\n");
 	return 0;
 }
