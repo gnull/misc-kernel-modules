@@ -3,14 +3,30 @@
 #include <linux/of.h>
 #include <linux/printk.h>
 #include <linux/i2c.h>
+#include <linux/platform_data/at24.h>
 
 static struct i2c_client *client = NULL;
 
+static void setup(struct memory_accessor *macc, void *context)
+{
+	printk("setup!\n");
+}
+
 static void spawn_eeprom(struct i2c_adapter *adapter)
 {
+	struct at24_platform_data platdata = {
+		/* Taken from `at24_ids[]` in drivers/misc/eeprom/at24.c */
+		.byte_len = 256,
+		/* The value 1 is not the fastest but is guaranteed to work */
+		.page_size = 1,
+		.flags = AT24_FLAG_READONLY,
+		.setup = setup,
+	};
+
 	struct i2c_board_info info = {
 		.type = "24c02",
 		.addr = 0x53,
+		.platform_data = &platdata,
 	};
 
 	client = i2c_new_device(adapter, &info);
