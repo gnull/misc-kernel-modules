@@ -54,21 +54,28 @@ static void remove_eeprom(void)
 static int spawner_probe(struct platform_device *pdev)
 {
 	int err;
-	phandle i2c_bus_h;
+	phandle eeprom_h;
 	struct device_node *self;
 	struct device_node *i2c_bus;
+	struct device_node *eeprom;
 	struct i2c_adapter *adapter;
 
 	self = pdev->dev.of_node;
 
-	err = of_property_read_u32(self, "i2c-adapter", &i2c_bus_h);
+	err = of_property_read_u32(self, "eeprom-device", &eeprom_h);
 	BUG_ON(err);
 
-	i2c_bus = of_find_node_by_phandle(i2c_bus_h);
+	eeprom = of_find_node_by_phandle(eeprom_h);
+	BUG_ON(!eeprom);
+
+	printk("node %s has eeprom-device property pointing at %s\n",
+		self->name, eeprom->name);
+
+	i2c_bus = of_get_parent(eeprom);
+	of_node_put(eeprom);
 	BUG_ON(!i2c_bus);
 
-	printk("node %s has i2c-bus property pointing at %s\n",
-		self->name, i2c_bus->name);
+	printk("node %s has parent device %s\n", eeprom->name, i2c_bus->name);
 
 	adapter = of_find_i2c_adapter_by_node(i2c_bus);
 	of_node_put(i2c_bus);
