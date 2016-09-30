@@ -22,7 +22,8 @@ static void setup(struct memory_accessor *macc, void *context)
 	printk("setup!\n");
 }
 
-static void spawn_eeprom(struct i2c_adapter *adapter)
+static void spawn_eeprom(struct i2c_adapter *adapter, const char *type,
+			unsigned short addr)
 {
 	struct at24_platform_data platdata = {
 		/* Taken from `at24_ids[]` in drivers/misc/eeprom/at24.c */
@@ -34,10 +35,10 @@ static void spawn_eeprom(struct i2c_adapter *adapter)
 	};
 
 	struct i2c_board_info info = {
-		.type = "24c02",
-		.addr = 0x53,
+		.addr = addr,
 		.platform_data = &platdata,
 	};
+	snprintf(info.type, I2C_NAME_SIZE, "%s", type);
 
 	client = i2c_new_device(adapter, &info);
 	BUG_ON(!client);
@@ -81,7 +82,7 @@ static int spawner_probe(struct platform_device *pdev)
 	of_node_put(i2c_bus);
 	BUG_ON(!adapter);
 
-	spawn_eeprom(adapter);
+	spawn_eeprom(adapter, "24c02", 0x53);
 
 	printk("found i2c adapter named as %s\n", adapter->name);
 
