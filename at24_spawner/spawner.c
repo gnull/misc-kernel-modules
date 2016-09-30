@@ -22,9 +22,14 @@ static void setup(struct memory_accessor *macc, void *context)
 	printk("setup!\n");
 }
 
-static void spawn_eeprom(struct i2c_adapter *adapter, const char *type,
-			unsigned short addr)
-{
+/* This function reads standard i2c device properties is the same way as
+ * function of_i2c_register_devices in drivers/i2c/i2c-core.c */
+static void spawn_eeprom(struct device_node *self) {
+	int err;
+	u32 reg;
+	struct device_node *adapter_node;
+	struct i2c_adapter *adapter;
+
 	struct at24_platform_data platdata = {
 		/* Taken from `at24_ids[]` in drivers/misc/eeprom/at24.c */
 		.byte_len = 256,
@@ -35,10 +40,40 @@ static void spawn_eeprom(struct i2c_adapter *adapter, const char *type,
 	};
 
 	struct i2c_board_info info = {
-		.addr = addr,
+		.of_node = of_node_get(self),
 		.platform_data = &platdata,
+		/* .reg and .type are filled below */
 	};
-	snprintf(info.type, I2C_NAME_SIZE, "%s", type);
+
+
+	/* save modalias to info.type */
+	err = of_modalias_node(self, info.type, sizeof(info.type));
+	BUG_ON(err);
+	printk("found modalias = %s\n", info.type);
+
+	/* next read reg property */
+	err = of_property_read_u32_array(self, "reg", &reg, 1);
+	BUG_ON(err);
+	BUG_ON(reg > (1 << 10) - 1);
+	info.addr = reg;
+	printk("found reg = %x casted as %hx\n", reg, info.addr);
+
+	adapter_node = of_get_parent(self);
+	BUG_ON(!adapter_node);
+
+	printk("EEPROM node %s has parent I2C bus node %s\n",
+		self->name, adapter_node->name);
+
+	adapter = of_find_i2c_adapter_by_node(adapter_node);
+	of_node_put(adapter_node);
+	BUG_ON(!adapter);
+
+	printk("found i2c adapter named as %s\n", adapter->name);
+
+	/* This request_module is done for the same reasons as in
+	 * of_i2c_register_devices function. For details see the commit
+	 * 020862648445d7c1b12ea213c152f27def703f3b upstream.*/
+	request_module("%s%s", I2C_MODULE_PREFIX, info.type);
 
 	client = i2c_new_device(adapter, &info);
 	BUG_ON(!client);
@@ -55,38 +90,19 @@ static void remove_eeprom(void)
 static int spawner_probe(struct platform_device *pdev)
 {
 	int err;
-	phandle eeprom_h;
-	struct device_node *self;
-	struct device_node *i2c_bus;
 	struct device_node *eeprom;
-	struct i2c_adapter *adapter;
+	phandle eeprom_h;
 
-	self = pdev->dev.of_node;
-
-	err = of_property_read_u32(self, "eeprom-device", &eeprom_h);
+	err = of_property_read_u32(pdev->dev.of_node, "eeprom-device",
+				&eeprom_h);
 	BUG_ON(err);
 
 	eeprom = of_find_node_by_phandle(eeprom_h);
 	BUG_ON(!eeprom);
 
-	printk("node %s has eeprom-device property pointing at %s\n",
-		self->name, eeprom->name);
+	spawn_eeprom(eeprom);
 
-	i2c_bus = of_get_parent(eeprom);
-	of_node_put(eeprom);
-	BUG_ON(!i2c_bus);
-
-	printk("node %s has parent device %s\n", eeprom->name, i2c_bus->name);
-
-	adapter = of_find_i2c_adapter_by_node(i2c_bus);
-	of_node_put(i2c_bus);
-	BUG_ON(!adapter);
-
-	spawn_eeprom(adapter, "24c02", 0x53);
-
-	printk("found i2c adapter named as %s\n", adapter->name);
-
-	printk("probed\n");
+	printk("probed");
 	return 0;
 }
 
