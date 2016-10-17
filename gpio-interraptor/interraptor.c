@@ -5,16 +5,27 @@
 #include <linux/gpio.h>
 #include <linux/of_gpio.h>
 
+#include <linux/interrupt.h>
+
 #include <linux/delay.h>
 
 #define pr(fmt, ...) pr_alert("%s: " fmt "\n", THIS_MODULE->name, ##__VA_ARGS__)
 
 int gpio;
+int irq;
+
+static irqreturn_t handler(int irq, void *priv)
+{
+	pr("irq!!!");
+
+	pr("gpio = %d", gpio_get_value_cansleep(gpio));
+
+	return IRQ_HANDLED;
+}
 
 static int interraptor_probe(struct platform_device *pdev)
 {
 	int err;
-	int i;
 
 	pr("probe");
 
@@ -29,15 +40,14 @@ static int interraptor_probe(struct platform_device *pdev)
 	err = gpio_direction_input(gpio);
 	BUG_ON(err);
 
-	for (i = 0; i < 100; ++i) {
-		int value;
+	irq = gpio_to_irq(gpio);
+	BUG_ON(irq < 0);
+	pr("got irq %d", irq);
 
-		value = gpio_get_value_cansleep(gpio);
-		BUG_ON(value < 0);
-
-		pr("gpio_%d = %d", gpio, value);
-		mdelay(500);
-	}
+	err = request_threaded_irq(irq, NULL, handler, IRQF_TRIGGER_RISING |
+			IRQF_TRIGGER_FALLING, "sfp-gpio-a-irq", &irq);
+	pr("request_irq returned %d", err);
+	BUG_ON(err);
 
 	return 0;
 }
@@ -47,6 +57,7 @@ static int interraptor_remove(struct platform_device *pdev)
 {
 	pr("remove");
 
+	free_irq(irq, &irq);
 	gpio_free(gpio);
 
 	return 0;
