@@ -3,10 +3,10 @@
 #include <linux/of.h>
 #include <linux/printk.h>
 
-struct adder_private {
-	// TODO
-	bool ok;
-};
+#include <linux/kdev_t.h>
+
+static struct class *adder_class;
+static struct device *device;
 
 static ssize_t hello_world_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -19,8 +19,22 @@ static int adder_probe(struct platform_device *pdev)
 {
 	int err;
 
-	err = device_create_file(&pdev->dev, &dev_attr_hello_world);
+	adder_class = class_create(THIS_MODULE, "adder");
+	BUG_ON(IS_ERR(adder_class));
+
+	printk("class created\n");
+
+	device = device_create(adder_class, &pdev->dev, MKDEV(0, 0), NULL,
+			"yet-another-adder");
+	printk("device = %d\n", (int)PTR_ERR(device));
+	BUG_ON(!IS_ERR(device));
+
+	printk("device created\n");
+
+	err = device_create_file(device, &dev_attr_hello_world);
 	BUG_ON(err);
+
+	printk("file created\n");
 
 	return 0;
 }
@@ -28,6 +42,17 @@ static int adder_probe(struct platform_device *pdev)
 static int adder_remove(struct platform_device *pdev)
 {
 	device_remove_file(&pdev->dev, &dev_attr_hello_world);
+
+	printk("file removed\n");
+
+	device_unregister(device);
+
+	printk("device removed\n");
+
+	class_destroy(adder_class);
+
+	printk("class destroyed\n");
+
 	return 0;
 }
 
