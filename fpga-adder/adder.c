@@ -15,6 +15,15 @@ static ssize_t hello_world_show(struct device *dev,
 }
 DEVICE_ATTR_RO(hello_world);
 
+static const struct attribute *adder_attrs[] = {
+	&dev_attr_hello_world.attr,
+	NULL
+};
+
+static const struct attribute_group adder_attr_group = {
+	.attrs = (struct attribute **) adder_attrs,
+};
+
 static int adder_probe(struct platform_device *pdev)
 {
 	int err;
@@ -25,7 +34,7 @@ static int adder_probe(struct platform_device *pdev)
 
 	printk("device created\n");
 
-	err = device_create_file(device, &dev_attr_hello_world);
+	err = sysfs_create_group(&device->kobj, &adder_attr_group);
 	BUG_ON(err);
 
 	printk("file created\n");
