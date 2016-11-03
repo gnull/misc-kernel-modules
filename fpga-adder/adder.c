@@ -44,10 +44,6 @@ static int adder_probe(struct platform_device *pdev)
 
 static int adder_remove(struct platform_device *pdev)
 {
-	device_remove_file(&pdev->dev, &dev_attr_hello_world);
-
-	pr_info("file removed\n");
-
 	device_unregister(device);
 
 	pr_info("device removed\n");
