@@ -1,4 +1,5 @@
 #include <linux/module.h>
+#include <linux/kernel.h>
 #include <linux/platform_device.h>
 #include <linux/of.h>
 #include <linux/printk.h>
@@ -8,15 +9,29 @@
 static struct class *adder_class;
 static struct device *device;
 
-static ssize_t hello_world_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
+int a;
+
+static ssize_t a_store(struct device *dev, struct device_attribute *attr,
+		const char *buf, size_t count)
 {
-	return scnprintf(buf, PAGE_SIZE, "Hello World!\n");
+	int res;
+	int err;
+
+	err = kstrtoint(buf, 0, &res);
+	if (err) {
+		dev_err(dev, "Wrong number format");
+		return err;
+	}
+
+	a = res;
+	dev_info(dev, "a = %d", a);
+
+	return count;
 }
-DEVICE_ATTR_RO(hello_world);
+DEVICE_ATTR_WO(a);
 
 static const struct attribute *adder_attrs[] = {
-	&dev_attr_hello_world.attr,
+	&dev_attr_a.attr,
 	NULL
 };
 
