@@ -32,12 +32,12 @@ static int adder_probe(struct platform_device *pdev)
 			"yet-another-adder");
 	BUG_ON(IS_ERR(device));
 
-	printk("device created\n");
+	pr_info("device created\n");
 
 	err = sysfs_create_group(&device->kobj, &adder_attr_group);
 	BUG_ON(err);
 
-	printk("file created\n");
+	pr_info("file created\n");
 
 	return 0;
 }
@@ -46,11 +46,11 @@ static int adder_remove(struct platform_device *pdev)
 {
 	device_remove_file(&pdev->dev, &dev_attr_hello_world);
 
-	printk("file removed\n");
+	pr_info("file removed\n");
 
 	device_unregister(device);
 
-	printk("device removed\n");
+	pr_info("device removed\n");
 
 	return 0;
 }
@@ -76,7 +76,7 @@ static int adder_init(void)
 
 	adder_class = class_create(THIS_MODULE, "adder");
 	BUG_ON(IS_ERR(adder_class));
-	printk("class created\n");
+	pr_info("class created\n");
 
 	err = platform_driver_register(&adder_drv);
 	BUG_ON(err);
@@ -90,7 +90,7 @@ static void adder_exit(void)
 	platform_driver_unregister(&adder_drv);
 
 	class_destroy(adder_class);
-	printk("class destroyed\n");
+	pr_info("class destroyed\n");
 }
 module_exit(adder_exit);
 
