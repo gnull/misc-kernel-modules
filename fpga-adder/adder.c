@@ -3,20 +3,25 @@
 #include <linux/platform_device.h>
 #include <linux/of.h>
 #include <linux/printk.h>
+#include <linux/device.h>
 
 #include <linux/kdev_t.h>
 
 static struct class *adder_class;
-static struct device *device;
 
-int a;
-int b;
+struct adder_priv {
+	int a, b;
+	struct device *dev;
+};
 
 static ssize_t a_store(struct device *dev, struct device_attribute *attr,
 		const char *buf, size_t count)
 {
 	int res;
 	int err;
+	struct adder_priv *priv;
+
+	priv = dev_get_drvdata(dev);
 
 	err = kstrtoint(buf, 0, &res);
 	if (err) {
@@ -24,8 +29,8 @@ static ssize_t a_store(struct device *dev, struct device_attribute *attr,
 		return err;
 	}
 
-	a = res;
-	dev_info(dev, "a = %d", a);
+	priv->a = res;
+	dev_info(dev, "a = %d", priv->a);
 
 	return count;
 }
@@ -36,6 +41,9 @@ static ssize_t b_store(struct device *dev, struct device_attribute *attr,
 {
 	int res;
 	int err;
+	struct adder_priv *priv;
+
+	priv = dev_get_drvdata(dev);
 
 	err = kstrtoint(buf, 0, &res);
 	if (err) {
@@ -43,8 +51,8 @@ static ssize_t b_store(struct device *dev, struct device_attribute *attr,
 		return err;
 	}
 
-	b = res;
-	dev_info(dev, "b = %d", b);
+	priv->b = res;
+	dev_info(dev, "b = %d", priv->b);
 
 	return count;
 }
@@ -52,7 +60,11 @@ DEVICE_ATTR_WO(b);
 
 static ssize_t sum_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	return scnprintf(buf, PAGE_SIZE, "%d\n", a + b);
+	struct adder_priv *priv;
+
+	priv = dev_get_drvdata(dev);
+
+	return scnprintf(buf, PAGE_SIZE, "%d\n", priv->a + priv->b);
 }
 DEVICE_ATTR_RO(sum);
 
@@ -70,26 +82,41 @@ static const struct attribute_group adder_attr_group = {
 static int adder_probe(struct platform_device *pdev)
 {
 	int err;
+	struct adder_priv *priv;
+	struct device *dev;
 
-	device = device_create(adder_class, &pdev->dev, MKDEV(0, 0), NULL,
+	dev_info(&pdev->dev, "probing");
+
+	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
+	BUG_ON(!priv);
+
+	dev = device_create(adder_class, &pdev->dev, MKDEV(0, 0), NULL,
 			"yet-another-adder");
-	BUG_ON(IS_ERR(device));
+	BUG_ON(IS_ERR(priv->dev));
 
-	pr_info("device created\n");
+	priv->dev = dev;
+	dev_set_drvdata(dev, priv);
+	platform_set_drvdata(pdev, priv);
 
-	err = sysfs_create_group(&device->kobj, &adder_attr_group);
+	dev_info(dev, "device created");
+
+	err = sysfs_create_group(&dev->kobj, &adder_attr_group);
 	BUG_ON(err);
 
-	pr_info("file created\n");
+	dev_info(dev, "files created");
 
 	return 0;
 }
 
 static int adder_remove(struct platform_device *pdev)
 {
-	device_unregister(device);
+	struct adder_priv *priv;
 
-	pr_info("device removed\n");
+	priv = platform_get_drvdata(pdev);
+
+	device_unregister(priv->dev);
+
+	dev_info(&pdev->dev, "device removed");
 
 	return 0;
 }
