@@ -26,8 +26,7 @@ static int adder_probe(struct platform_device *pdev)
 
 	device = device_create(adder_class, &pdev->dev, MKDEV(0, 0), NULL,
 			"yet-another-adder");
-	printk("device = %d\n", (int)PTR_ERR(device));
-	BUG_ON(!IS_ERR(device));
+	BUG_ON(IS_ERR(device));
 
 	printk("device created\n");
 
