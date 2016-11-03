@@ -122,7 +122,7 @@ static int adder_remove(struct platform_device *pdev)
 }
 
 static const struct of_device_id adder_id_table[] = {
-	{.compatible = "some-fancy-prefix,adder"},
+	{.compatible = "linux-piter,adder"},
 	{}
 };
 MODULE_DEVICE_TABLE(of, adder_id_table);
