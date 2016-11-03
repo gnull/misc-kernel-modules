@@ -10,6 +10,7 @@ static struct class *adder_class;
 static struct device *device;
 
 int a;
+int b;
 
 static ssize_t a_store(struct device *dev, struct device_attribute *attr,
 		const char *buf, size_t count)
@@ -30,8 +31,28 @@ static ssize_t a_store(struct device *dev, struct device_attribute *attr,
 }
 DEVICE_ATTR_WO(a);
 
+static ssize_t b_store(struct device *dev, struct device_attribute *attr,
+		const char *buf, size_t count)
+{
+	int res;
+	int err;
+
+	err = kstrtoint(buf, 0, &res);
+	if (err) {
+		dev_err(dev, "Wrong number format");
+		return err;
+	}
+
+	b = res;
+	dev_info(dev, "b = %d", b);
+
+	return count;
+}
+DEVICE_ATTR_WO(b);
+
 static const struct attribute *adder_attrs[] = {
 	&dev_attr_a.attr,
+	&dev_attr_b.attr,
 	NULL
 };
 
