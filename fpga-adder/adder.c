@@ -19,11 +19,6 @@ static int adder_probe(struct platform_device *pdev)
 {
 	int err;
 
-	adder_class = class_create(THIS_MODULE, "adder");
-	BUG_ON(IS_ERR(adder_class));
-
-	printk("class created\n");
-
 	device = device_create(adder_class, &pdev->dev, MKDEV(0, 0), NULL,
 			"yet-another-adder");
 	BUG_ON(IS_ERR(device));
@@ -48,10 +43,6 @@ static int adder_remove(struct platform_device *pdev)
 
 	printk("device removed\n");
 
-	class_destroy(adder_class);
-
-	printk("class destroyed\n");
-
 	return 0;
 }
 
@@ -69,7 +60,30 @@ static struct platform_driver adder_drv = {
 		.of_match_table = adder_id_table,
 	}
 };
-module_platform_driver(adder_drv);
+
+static int adder_init(void)
+{
+	int err;
+
+	adder_class = class_create(THIS_MODULE, "adder");
+	BUG_ON(IS_ERR(adder_class));
+	printk("class created\n");
+
+	err = platform_driver_register(&adder_drv);
+	BUG_ON(err);
+
+	return 0;
+}
+module_init(adder_init);
+
+static void adder_exit(void)
+{
+	platform_driver_unregister(&adder_drv);
+
+	class_destroy(adder_class);
+	printk("class destroyed\n");
+}
+module_exit(adder_exit);
 
 MODULE_AUTHOR("Ivan Oleynikov");
 MODULE_LICENSE("GPL");
