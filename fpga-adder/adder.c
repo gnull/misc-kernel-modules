@@ -50,9 +50,16 @@ static ssize_t b_store(struct device *dev, struct device_attribute *attr,
 }
 DEVICE_ATTR_WO(b);
 
+static ssize_t sum_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return scnprintf(buf, PAGE_SIZE, "%d\n", a + b);
+}
+DEVICE_ATTR_RO(sum);
+
 static const struct attribute *adder_attrs[] = {
 	&dev_attr_a.attr,
 	&dev_attr_b.attr,
+	&dev_attr_sum.attr,
 	NULL
 };
 
