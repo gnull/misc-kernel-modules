@@ -14,6 +14,8 @@ struct adder_priv {
 	struct device *dev;
 };
 
+int adder_cnt = 0;
+
 static ssize_t a_store(struct device *dev, struct device_attribute *attr,
 		const char *buf, size_t count)
 {
@@ -91,7 +93,7 @@ static int adder_probe(struct platform_device *pdev)
 	BUG_ON(!priv);
 
 	dev = device_create(adder_class, &pdev->dev, MKDEV(0, 0), NULL,
-			"yet-another-adder");
+			"adder-%d", adder_cnt++);
 	BUG_ON(IS_ERR(priv->dev));
 
 	priv->dev = dev;
@@ -139,6 +141,8 @@ static struct platform_driver adder_drv = {
 static int adder_init(void)
 {
 	int err;
+
+	adder_cnt = 0;
 
 	adder_class = class_create(THIS_MODULE, "adder");
 	BUG_ON(IS_ERR(adder_class));
